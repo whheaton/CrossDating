@@ -1,0 +1,187 @@
+\documentclass[11pt]{article}
+
+
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{setspace}
+\doublespacing
+
+\setlength{\textwidth}{6.0in}
+\setlength{\oddsidemargin}{.1in}
+\setlength{\textheight}{21.5cm}
+\setlength{\topmargin}{-1.cm}
+
+\setlength{\parindent}{2 ex}
+\def\noi{\noindent}
+\def\sma{\smallskip}
+\def\med{\medskip}
+\def\big{\bigskip}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{definition}{Definition}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{lem}[theorem]{Lemma}
+\newtheorem{prob}{Problem}
+\newcommand{\cqfd}{\mbox{}\hfill $\Box$ \medskip}
+\newcommand{\comment}[1]{}
+
+\title{Dendrochronology: Algorithmically Cross Dating Tree Rings}
+\date{23 Sept 2012} %Clears date field from title
+\author{William Heaton}
+\begin{document}
+\maketitle
+\paragraph{Motivation\newline}
+\par{
+As trees grow their yearly growth leaves a pattern of differential colorations known as tree rings. One ring is produced for each year of growth of the tree. Features of these rings can provide useful information about the conditions in which a tree was growing including historical climate data. A further feature of these tree rings is that within regions of similar climate, they can be compared to one another.  This comparison allows researchers to overlay and match tree ring series from different trees.  For example, you could compare a 100 year old tree which spanned years 1850-1950 with a more recent tree which spanned 1900-2012.  From this comparison you could determine the exact years that the first tree was alive without having previous knowledge of those dates. And you can continue this process dating tree rings back up to thousands of years if the wood is preserved. The purpose of this project is to provide automated, statistically meaningful, and powerful tree ring cross dating software to the Dendrochronology community.  To do this we employ algorithms originally made for pattern matching of DNA sequence and DNA map information in computational biology.
+}
+\paragraph{Pairwise Alignment\newline}{
+\par{
+Thanks to the field of computational biology especially Waterman and others, there exists a considerable literature on pairwise map alignments.\cite{Waterman84}\cite{Waterman1}\cite{ValouevAlignment}\cite{SOMA}  They are similar to algorithms for pairwise sequence alignment originally by Needleman and Wunsch\cite{NeedlemanWunsch} and extended by Smith and Waterman.\cite{SmithWaterman}\cite{Durbin} In the example below the horizontal lines represents the two Tree Series cores and the tick marks represent tree ring divisions.  Here you can see the distance between each tick represents the tree rings.  Further, the dotted lines between ticks on the other strand represent the alignment of those rings.  The ordered set of pairs of probes aligned in the optimal alignment are the pairwise alignment between two tree ring series  For notation we will denote $v^{i}_j$ as the $j^{th}$ ring division on tree ring series $i$.
+
+}
+\begin{figure}[h!]
+ \caption{Pairwise Map Alignment.}
+\begin{center}
+\begin{tikzpicture}[scale=1]
+
+	\tikzstyle alignment lines=[densely dashed, thick];
+	\tikzstyle fragment lines=[thick];
+	\tikzstyle probe lines=[thick];
+
+	\draw[fragment lines] (-6,1) node[anchor=east] {$v^0$} -- (3.5,1);
+		\foreach \x/\label in {-5.8/0,-5.5/1,-2.75/2,-2.5/3,0/4,2/5,3/6}
+			\draw[probe lines,xshift=\x cm] (0,.85) -- (0,1.15) node[anchor=south] {$\label$};
+
+	\draw[fragment lines] (-3.5,0) node[anchor=east] {$v^1$}  -- (6,0);
+		\foreach \x/\y in {-2.75/0,-2.5/1,0/2,2/3,3/4,4.5/5,5/6}
+			\draw[probe lines,xshift=\x cm] (0,.15) -- (0,-.15) node[anchor=north] {$\y$};
+		
+		\foreach \x in {-2.75,-2.5,0,2,3}
+			\draw[alignment lines, xshift=\x cm] (0,.18) -- (0,.82);
+
+\end{tikzpicture}
+\caption{Giving the ordered set of pairs for this alignment as $\{\{v^0_2,v^1_0\},\{v^0_3,v^1_1\},\{v^0_4,v^1_2\},\{v^0_5,v^1_3\},\{v^0_6,v^1_4\}\}$
+}
+\end{center}
+\end{figure}
+
+}
+\paragraph{Normalization\newline}
+\par{
+Different tree's grow at different rates whether that is a constant multiple on the size of each tree ring and/or a constant addition to each year's growth. Another bias that must be dealt with is that most tree's follow and exponential decay in growth from year to year. We wish to compare tree rings from different trees at any time in their life cycle. Previous methods employed regression fits of various types (exponential, spline) to subtract off the trend of ring sizes over the course of a tree's lifespan. Here I propose a more general way of normalizing tree ring data. Trends of any type serve to explain the low frequency variation of tree ring widths. I propose to remove the low frequency variation directly via a high pass filter on the discrete Fourier transform of the tree ring data and then normalize the resulting inverse fourier transform data to a mean of 0 and standard deviation of 1. This also provides us with a meaningful and straight forward way of identifying outliers. At a later date I will provide some graphs and graphics of tree rings before and after their normalization to demonstrate the improvement in comparability.
+}
+\paragraph{Distributions\newline}
+\par{
+Need to work on figuring this out more. What are the tree ring sizing distributions? And what are they post-normalization? What are the error distributions and do they correlate in some way with the tree ring sizes (more or less error compared to the ring sizes).
+}
+\paragraph{Error Model\newline}
+\par{
+I will get to this later. There is tree ring sizing error as well as missing rings in both the master series and the raw tree ring measurements.  The master series has much less error due to improvements made via averaging over many tree ring series data. Basically I am currently using a sum of squares scoring function and  which works for most distributions but isn't be the best for any nor is it particularly meaningful.
+}
+
+\paragraph{Missed Rings\newline}\par{
+Rings are missed (not seen, not measured) with some probability. We shall refer to missing rings from now on as \textbf{false negatives}. One question I have regarding false negatives is ``Does the probability of a tree ring missing depend on the size of the tree ring?" Master series can also have missed rings but at a much lower probability.
+}
+\par{
+It is worth noting a few things about false negatives in conjunction with positional error. When a tree ring series contains a false negative it may be ambiguous which year is missing $\pm1$ year. The reason for this is that I am about to fall asleep so I should do this later but I have in mind a nice figure that explains it visually. It is also important to mention that when false negatives occur very close to the beginning or end of the tree's lifespan that missed ring may be overlooked by the algorithm. The reason for this is that under tolerated sizing error, it may be a better explanation of the data to say that no false negative occurred but that the last (or first) few tree rings were not closely matched. You could even imagine a situation in which, by happenstance those intervals do match remarkably well. Once again this is not of large concern as it does maintain the overall alignment and we will have statistically meaningful metrics of whether the overall alignment matches or does not match two Tree series (or a series and a master series).
+\begin{figure}[h!]
+ \caption{Pairwise Alignment Ambiguities}
+\begin{center}
+\begin{tikzpicture}[scale=1]
+
+	\tikzstyle alignment lines=[densely dashed, thick];
+	\tikzstyle fragment lines=[thick];
+	\tikzstyle probe lines=[thick];
+
+	\draw[fragment lines] (-6,1) node[anchor=east] {$v^0$} -- (3.5,1);
+		\foreach \x/\label in {-5.8/0,-5.5/1,-2.75/2,-2.5/3,0/4,2/5,3/6}
+			\draw[probe lines,xshift=\x cm] (0,.85) -- (0,1.15) node[anchor=south] {$\label$};
+
+	\draw[fragment lines] (-3.5,0) node[anchor=east] {$v^1$}  -- (6,0);
+		\foreach \x/\y in {-2.75/0,-2.5/1,-.1/2,.1/3,2/4,3/5,4.5/6,5/7}
+			\draw[probe lines,xshift=\x cm] (0,.15) -- (0,-.15) node[anchor=north] {$\y$};
+		
+		\foreach \x in {-2.75,-2.5,0,2,3}
+			\draw[alignment lines, xshift=\x cm] (0,.18) -- (0,.82);
+
+\end{tikzpicture}
+\caption{Here it is unclear whether the tree ring separation $v^0_4$ should be aligned with $v^1_2$ or $v^1_3$. An exact tie is unlikely but sizing error can cause pairwise alignment will pick the incorrect ring to gap (in that one ring is matched to a ring from which year it did not arise).  This is not a problem because it is the most likely ring to have been gapped under the error model and still maintains the overall alignment.
+}
+\end{center}
+\end{figure}
+
+}
+
+\par{
+\begin{algorithm}[h!]
+\caption{Alignment Algorithm}
+\begin{algorithmic}
+\Procedure{Align}{$X,Y$}
+\State $\forall i M_{i,0} \leftarrow 0$
+\State $\forall j M_{0,j} \leftarrow 0$
+
+\For{$i \gets 0, n$}
+	\For{$j \gets 0, m$}\Comment{$X_i$ and $Y_j$ are the right sides of the interval}
+	\State $maxScore \gets -\infty$
+		\For{$k \gets i-1, \max{(0,i-\delta)}$}\Comment{Looking back for left end of interval}
+		
+			\For{$l \gets j-1, \max{(0,j-\delta)}$}
+				\State $g \gets i-k+j-l-2$ \Comment{gapped rings}
+				\State $tmpScore \gets M_{i,j}+S(X_{k,i},Y_{l,j}, g))$
+				\If{$tmpScore > maxScore$}
+					\State $B_{i,j} \gets [k,l]$
+					\State $maxScore \gets tmpScore$
+				\EndIf
+				
+			\EndFor
+		\EndFor
+		\State $M_{i,j} \gets maxScore$
+	\EndFor
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[h!]
+
+\caption{Viterbi bactrace of dynamic programming matrix}
+\begin{algorithmic}
+\Procedure{Backtrace}{B}
+\State $maxEnd \gets -\infty$ 
+\For{$i \gets 0, n$}\Comment{Find max score on the end edges on which to backtrace}
+\If{$B_{i,m-1} > maxEnd$}
+\State $k,l \gets i,m-1$
+\State $maxEnd \gets B_{i,m-1}$
+\EndIf
+\EndFor
+\For{$j \gets 0, m$}
+\If{$B_{n-1,j} > maxEnd$}
+\State $k,l \gets n-1,j$
+\State $maxEnd \gets B_{n-1,j}$
+\EndIf
+\EndFor
+\Statex
+\While{$k \geq 0 \& l \geq 0$}\Comment{Backtrace}
+\State add $k,l$ to alignment
+\State $k,l \gets B_{k,l}$
+\EndWhile
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+}
+\bibliographystyle{amsplain}
+\bibliography{Dendrochronology}
+\end{document}
