@@ -1,5 +1,13 @@
 package dataStructures;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
+
 public class TreeRingSeries extends RingSeries{
 
 	private double[] the_radii;
@@ -9,15 +17,16 @@ public class TreeRingSeries extends RingSeries{
 	public TreeRingSeries(double[] rings){
 		the_radii = rings;
 		raw_rings = new double[rings.length];
+		the_rings = new double[rings.length];
 		for(int ii = 0; ii < rings.length; ii++){
 			raw_rings[ii] = rings[ii];
-			
+			the_rings[ii] = rings[ii];
 		}
 		fitAndNormalize();
-		for(int ii = 1; ii < the_radii.length; ii++){
-			//System.out.println(the_radii[ii]);
-			the_radii[ii] = the_radii[ii] + the_radii[ii-1];
-		}
+//		for(int ii = 1; ii < the_radii.length; ii++){
+//			//System.out.println(the_radii[ii]);
+//			the_radii[ii] = the_radii[ii] + the_radii[ii-1];
+//		}
 	}
 	
 	public TreeRingSeries(double[] rings, boolean normalized) {
@@ -54,34 +63,50 @@ public class TreeRingSeries extends RingSeries{
 
 	private void fitAndNormalize(){
 		
-		double[] x = new double[the_radii.length];
-		double[] y = new double[the_radii.length];
-		for(int ii = 1; ii<=the_radii.length; ii++){
+		double[] x = new double[raw_rings.length];
+		double[] y = new double[raw_rings.length];
+		for(int ii = 1; ii <= raw_rings.length; ii++){
 			x[ii-1] = ii;
-			y[ii-1] = Math.log(the_radii[ii-1]);
+			y[ii-1] = Math.log(raw_rings[ii-1]);
 		}
 		
 		
 		double[] function = regression(x,y);
 		
+		
+		
+		StandardDeviation sd = new StandardDeviation();
+		
+		System.out.println("new regression normalization y= "+Math.exp(function[1])+"*"+"x*"+Math.exp(function[0])+"");
+		for(int ii = 0; ii < the_rings.length; ii++){
+			double expected = Math.exp(function[0]*(ii+1)+function[1]);
+			//System.out.println(the_rings[ii]+" vs "+expected);
+			the_rings[ii] = (the_rings[ii]-expected);//the_radii[ii];//(Math.exp(function[0]*(Math.log(ii+1))+function[1]));
+			//System.out.println(the_rings[ii]);
+			
+		}
+		
 		double mean = 0.0;
-		for(int ii = 0; ii < the_radii.length; ii++){
-			mean+=the_radii[ii];
+		for(int ii = 0; ii < the_rings.length; ii++){
+			mean+=the_rings[ii];
 		}
-		mean/=the_radii.length;
-		System.out.println("new regression normalization y= e^("+function[1]+" + "+function[0]+"x)");
-		for(int ii = 0; ii < the_radii.length; ii++){
-			the_radii[ii] = (the_radii[ii]-(Math.exp(function[0]*(ii+1)+function[1])))/mean;//the_radii[ii];//(Math.exp(function[0]*(Math.log(ii+1))+function[1]));
-			System.out.println(the_radii[ii]);
+		mean/=the_rings.length;
+		
+		double std = sd.evaluate(the_rings);
+		System.out.println("std "+std+" mean "+mean);
+		for(int ii = 0; ii < the_rings.length; ii++){
+			the_rings[ii] = (the_rings[ii] - mean)/std;
+			the_radii[ii] = (ii==0?the_rings[0]:the_radii[ii-1]+the_rings[ii]);
+			System.out.println(the_rings[ii]);
 		}
-		the_rings = the_radii;
+		
 	}
 	
 	public static double[] fitAndNormalize(double[] rings){
 		double[] x = new double[rings.length];
 		double[] y = new double[rings.length];
 		for(int ii = 1; ii<=rings.length; ii++){
-			x[ii-1] = Math.log(ii);
+			x[ii-1] = ii;
 			y[ii-1] = Math.log(rings[ii-1]);
 		}
 		
@@ -93,9 +118,10 @@ public class TreeRingSeries extends RingSeries{
 			mean+=rings[ii];
 		}
 		mean/=rings.length;
+		
 		System.out.println("new regression normalization y= e^("+function[1]+" + "+function[0]+"x)");
 		for(int ii = 0; ii < rings.length; ii++){
-			rings[ii] = (rings[ii]-(Math.exp(function[0]*(Math.log(ii+1))+function[1])))/mean;//rings[ii];//(Math.exp(function[0]*(Math.log(ii+1))+function[1]));
+			rings[ii] = (rings[ii]-(Math.exp(function[0]+function[1])))/mean;//rings[ii];//(Math.exp(function[0]*(Math.log(ii+1))+function[1]));
 			System.out.println(rings[ii]);
 		}
 		return rings;
@@ -208,5 +234,40 @@ public class TreeRingSeries extends RingSeries{
 
 		return new double[]{beta1,beta0,R2};
 	}
+	
+	
+	public static TreeRingSeries getTreeRingSeries(File f){
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(f));
+			String str;
+			ArrayList<Double> rings = new ArrayList<Double>();
+			int startyear = -1;
+			br.readLine(); // header
+			while((str = br.readLine()) != null){
+				String[] line = str.split("\\s");
+				System.out.println(str);
+				if(line.length == 2){
+					rings.add(Double.parseDouble(line[1]));
+					
+				}
+				else{
+					rings.add(Double.parseDouble(line[0]));
+				}
+				
+			}
+			double[] ringsarray = new double[rings.size()];
+			for(int ii = 0; ii < ringsarray.length; ii++){
+				ringsarray[ii] = rings.get(ii);
+			}
+			//ringsarray = fitAndNormalize(ringsarray);
+			return new TreeRingSeries(ringsarray);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	
 	
 }

@@ -1,10 +1,45 @@
 package dataStructures;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class MasterSeries extends RingSeries {
 
 	private double[] the_radii;
 	private double[] the_rings;
 	private int year_offset;
+	
+	public static MasterSeries getMasterSeries(File f){
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(f));
+			String str;
+			ArrayList<Double> rings = new ArrayList<Double>();
+			int startyear = -1;
+			br.readLine(); // header
+			while((str = br.readLine()) != null){
+				String[] line = str.split("\\s");
+				System.out.println(str);
+				if(startyear == -1){
+					startyear = Integer.parseInt(line[0]);
+					
+				}
+				rings.add(Double.parseDouble(line[1]));
+			}
+			double[] ringsarray = new double[rings.size()];
+			for(int ii = 0; ii < ringsarray.length; ii++){
+				ringsarray[ii] = rings.get(ii);
+			}
+			return new MasterSeries(ringsarray,startyear);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
 	public MasterSeries(double[] rings, int startyear) {
 		the_rings = new double[rings.length];

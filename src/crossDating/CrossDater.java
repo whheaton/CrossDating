@@ -1,26 +1,33 @@
 package crossDating;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map.Entry;
 
 import treeRingAlignment.Aligner;
 import treeRingAlignment.DendroAlign;
+import treeRingAlignment.PearsonCorrelationScorer;
 import treeRingAlignment.RingScorer;
 import treeRingAlignment.SumOfSquaresRingScorer;
-import visual.AlignmentPanel;
-import visual.Fragment2;
-import visual.Fragment2.FragmentPanel;
-
 import dataStructures.MapAlignment;
 import dataStructures.MasterSeries;
 import dataStructures.TreeRingSeries;
 import fourierFun.FourierTesting;
 
+
+/**
+ * This class is depricated, was initially used for testing
+ * Now there is a GUI from which testing is more efficient.
+ * See MainGUI in the visual package
+ * 
+ * 
+ * @author wheaton
+ *
+ */
 public class CrossDater {
 
 
@@ -28,7 +35,8 @@ public class CrossDater {
 
 	public CrossDater(TreeRingSeries series, MasterSeries master){
 
-		RingScorer score = new SumOfSquaresRingScorer();
+		//RingScorer score = new SumOfSquaresRingScorer();
+		RingScorer score = new PearsonCorrelationScorer();
 		the_aligner = new DendroAlign(score);
 		MapAlignment alignment = the_aligner.align(master,series);
 		System.out.println("done? "+alignment.getMap().size());
@@ -71,7 +79,7 @@ public class CrossDater {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void main2(String[] args) {
 		String input = "./Series2.txt";
 		try {
 			ArrayList<Integer> years = new ArrayList<Integer>();
@@ -103,7 +111,7 @@ public class CrossDater {
 				
 			}
 			int masteroffset = years.get(0);
-			MasterSeries M = /**new MasterSeries(masterseries,years.get(0));/**/FourierTesting.highPassFilter(.01, masterseries, years.get(0));
+			MasterSeries M = new MasterSeries(masterseries,years.get(0));//FourierTesting.highPassFilter(.01, masterseries, years.get(0));
 			System.out.println(M.toString());
 			series1 = series3;
 			double[] series = new double[series1.size()];
@@ -111,7 +119,7 @@ public class CrossDater {
 				series[ii] = series1.get(ii);
 			}
 			//series = TreeRingSeries.fitAndNormalize(series);
-			TreeRingSeries trs = /**new TreeRingSeries(series);/**/FourierTesting.highPassFilter(.01, series);
+			TreeRingSeries trs = new TreeRingSeries(series);//FourierTesting.highPassFilter(.01, series);
 			System.out.println("Filtered tree rings\n"+trs.toString());
 			new CrossDater(trs,M);
 
@@ -123,6 +131,13 @@ public class CrossDater {
 			e.printStackTrace();
 		}
 
+	}
+	
+	public static void main(String[] args){
+		MasterSeries M = MasterSeries.getMasterSeries(new File("./datasets/master.txt"));
+		TreeRingSeries trs = TreeRingSeries.getTreeRingSeries(new File("./datasets/treeunknown.txt"));
+		new CrossDater(trs,M);
+		
 	}
 
 }
